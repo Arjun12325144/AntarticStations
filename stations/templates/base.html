@@ -1,0 +1,8 @@
+{% load static %}<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Polar Ops{% endblock %} · Indian Antarctic Programme</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/app.css' %}"></head><body>
+<nav><a class="brand" href="{% url 'dashboard' %}">Polar Ops · Bharat Antarctica</a>
+{% if user.is_authenticated %}<a class="l" href="{% url 'dashboard' %}">Stations</a><a class="l" href="{% url 'supplies' %}">Supplies</a><a class="l" href="{% url 'people' %}">Personnel</a><a class="l" href="{% url 'incidents' %}">Incidents</a>
+<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn ghost" style="padding:.35rem .8rem">Sign out</button></form>{% endif %}</nav>
+<main>{% for m in messages %}<div class="toast">{{ m }}</div>{% endfor %}{% block content %}{% endblock %}</main>{% block scripts %}{% endblock %}</body></html>

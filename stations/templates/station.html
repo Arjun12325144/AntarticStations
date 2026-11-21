@@ -1,0 +1,32 @@
+{% extends 'base.html' %}{% load static %}{% block title %}{{ s.name }}{% endblock %}{% block content %}
+<div data-station="{{ s.pk }}"><div class="head reveal"><div><span class="badge {{ s.status }}" data-badge><i></i><em>{{ s.get_status_display }}</em></span> <span class="badge online"><i></i>Live · <em id="stamp">now</em></span> <span class="src {% if live_src %}live{% endif %}">{% if live_src %}● Weather: Open-Meteo{% else %}Weather simulated{% endif %}</span>
+<h1 style="margin-top:.5rem">{{ s.name }}</h1><p>{{ s.location }} · {{ s.summary }} {{ s.personnel }} of {{ s.capacity }} beds occupied.</p></div><a class="btn ghost" href="{% url 'export' s.pk %}">⬇ Export CSV</a></div>
+<div class="strip reveal">
+<div class="card"><b><span data-f="temperature" data-d="1">{{ s.latest.temperature }}</span>°C</b><span class="l">Outside</span></div>
+<div class="card"><b><span data-f="wind_speed" data-d="0">{{ s.latest.wind_speed|floatformat:0 }}</span> km/h</b><span class="l">Wind</span></div>
+<div class="card"><b><span data-f="gust" data-d="0">{{ ext.gust|floatformat:0|default:"—" }}</span> km/h</b><span class="l">Gusts</span></div>
+<div class="card"><b><span data-f="wind_dir" data-d="0">{{ ext.dir|default:"—" }}</span>°</b><span class="l">Wind direction</span></div>
+<div class="card"><b><span data-f="humidity" data-d="0">{{ ext.humidity|default:"—" }}</span>%</b><span class="l">Humidity</span></div>
+<div class="card"><b><span data-f="pressure" data-d="0">{{ ext.pressure|default:"—" }}</span> hPa</b><span class="l">Pressure</span></div>
+<div class="card"><b><span data-f="power_kw" data-d="0">{{ s.latest.power_kw|floatformat:0 }}</span> kW</b><span class="l">Power</span></div>
+<div class="card"><b><span data-f="link_mbps" data-d="1">{{ s.latest.link_mbps }}</span> Mbps</b><span class="l">Satellite link</span></div>
+<div class="card"><b><span data-f="fuel_pct" data-d="0">{{ s.latest.fuel_pct|floatformat:0 }}</span>%</b><span class="l">Fuel</span></div></div>
+<div class="two"><div class="card reveal"><h3>Live feed</h3><p class="muted" style="margin:0">Temperature (blue), power (green), wind (amber); newest on the right</p><canvas id="c" width="800" height="300"></canvas></div>
+<div class="card reveal"><h3>Send a remote command</h3><p class="muted">Queued, delivered and acknowledged on the next satellite window.</p>
+<form method="post" action="{% url 'command' s.pk %}" style="margin-top:.8rem">{% csrf_token %}<label>Action</label><select name="action">{% for k,v in actions %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+<label>Note (optional)</label><input name="note" maxlength="160" placeholder="e.g. Set to 18°C for night"><button class="btn">Send command</button></form></div></div>
+<div class="two"><div class="card"><h3>Command log</h3>{% for c in commands %}<div class="row"><div><b>{{ c.get_action_display }}</b><div class="muted">{{ c.note|default:"No note" }} · {{ c.issued_by }} · {{ c.issued_at|date:"d M, H:i" }}</div></div><span class="badge"><em>{{ c.state }}</em></span></div>{% empty %}<p class="muted">No commands sent yet.</p>{% endfor %}</div>
+<div class="card"><h3>Supplies</h3>{% for x in s.supplies.all %}<div class="row"><div style="flex:1"><b>{{ x.item }}</b><div class="bar {% if x.low %}warn{% endif %}"><div style="--w:{{ x.pct }}%"></div></div></div><span class="muted">{{ x.quantity }} {{ x.unit }}</span></div>{% endfor %}</div></div></div>
+{{ series|json_script:"series" }}{% endblock %}
+{% block scripts %}<script src="{% static 'js/live.js' %}"></script><script>
+const d=JSON.parse(document.getElementById('series').textContent),cv=document.getElementById('c'),x=cv.getContext('2d'),SID={{ s.pk }};
+function line(v,col,t){const W=cv.width,H=cv.height,p=20,mn=Math.min(...v),mx=Math.max(...v),n=v.length;
+ const pts=v.map((y,i)=>[p+i*(W-2*p)/(n-1),H-p-(y-mn)/((mx-mn)||1)*(H-2*p)]);const k=Math.floor(pts.length*t);
+ const g=x.createLinearGradient(0,0,W,0);g.addColorStop(0,col[0]);g.addColorStop(1,col[1]);x.strokeStyle=g;x.lineWidth=2.5;x.lineJoin='round';x.beginPath();
+ pts.slice(0,Math.max(k,2)).forEach((q,i)=>i?x.lineTo(...q):x.moveTo(...q));x.stroke()}
+function render(t){x.clearRect(0,0,cv.width,cv.height);x.strokeStyle='rgba(143,220,255,.1)';for(let i=1;i<5;i++){x.beginPath();x.moveTo(0,i*cv.height/5);x.lineTo(cv.width,i*cv.height/5);x.stroke()}
+ line(d.temp,['#8fdcff','#7a6cff'],t);line(d.power,['#2de2b4','#8fdcff'],t);line(d.wind,['#ffb454','#ff6b8a'],t)}
+let t0=null;function anim(ts){t0=t0||ts;const t=Math.min((ts-t0)/1400,1);render(t);if(t<1)requestAnimationFrame(anim)}requestAnimationFrame(anim);
+let first=true;startLive(j=>{const s=j.stations.find(z=>z.id===SID);if(!s)return;if(first){first=false;return}
+ d.temp.push(s.temperature);d.power.push(s.power_kw);d.wind.push(s.wind_speed);if(d.temp.length>40){d.temp.shift();d.power.shift();d.wind.shift()}render(1)});
+</script>{% endblock %}

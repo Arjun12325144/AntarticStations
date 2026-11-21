@@ -1,0 +1,19 @@
+{% extends 'base.html' %}{% load static %}{% block content %}
+<div class="head reveal"><div><h1>Station overview</h1><p>Real weather from Open-Meteo and space weather from NOAA, combined with station systems telemetry.</p></div>
+<span class="badge online"><i></i>Live · <em id="stamp">now</em></span></div>
+<div class="kpis reveal"><div class="card kpi"><b>{{ people }}</b><span class="muted">people on the ice</span></div>
+<div class="card kpi"><b data-g="open_count">{{ open_count }}</b><span class="muted">open incidents</span></div>
+<div class="card kpi"><b data-g="low_count">{{ low_count }}</b><span class="muted">supplies running low</span></div>
+<div class="card kpi"><b data-g="kp">{{ kp|default:"—" }}</b><span class="muted">Geomagnetic Kp · {{ kp_label }}</span></div></div>
+<div class="grid">{% for s in stations %}{% with t=s.latest %}
+<a class="card reveal" data-station="{{ s.pk }}" href="{% url 'station' s.pk %}"><div class="cardtop"><span class="badge {{ s.status }}" data-badge><i></i><em>{{ s.get_status_display }}</em></span><span class="src {% if s.live_src %}live{% endif %}">{% if s.live_src %}● Live weather{% else %}Simulated{% endif %}</span></div>
+<h2>{{ s.name }}</h2><div class="muted">{{ s.location }} · {{ s.latitude }}°, {{ s.longitude }}° · since {{ s.established }}</div>
+<div class="metrics"><div><b><span data-f="temperature" data-d="1">{{ t.temperature }}</span>°</b><span class="l">Temp °C</span></div><div><b><span data-f="wind_speed" data-d="0">{{ t.wind_speed|floatformat:0 }}</span></b><span class="l">Wind km/h</span></div><div><b><span data-f="power_kw" data-d="0">{{ t.power_kw|floatformat:0 }}</span></b><span class="l">Power kW</span></div><div><b><span data-f="link_mbps" data-d="1">{{ t.link_mbps }}</span></b><span class="l">Link Mbps</span></div></div>
+<div class="muted" style="margin-top:.6rem">Fuel <span data-f="fuel_pct" data-d="0">{{ t.fuel_pct|floatformat:0 }}</span>% · {{ s.personnel }}/{{ s.capacity }} beds</div><div class="bar {% if t.fuel_pct < 55 %}warn{% endif %}"><div data-bar="fuel_pct" style="--w:{{ t.fuel_pct|floatformat:0 }}%"></div></div></a>
+{% endwith %}{% endfor %}</div>
+<div class="three"><div class="card reveal"><h3>Recent remote commands</h3>{% for c in events %}<div class="row"><div><b>{{ c.get_action_display }}</b> → {{ c.station.name }}<div class="muted">{{ c.note|default:"No note" }} · {{ c.issued_by }}</div></div><span class="badge"><em>{{ c.state }}</em></span></div>{% empty %}<p class="muted">No commands yet.</p>{% endfor %}</div>
+<div class="card reveal"><h3>Station map (South Pole view)</h3><svg viewBox="0 0 240 240" width="100%">{% for r in "27.5 55 82.5 110"|make_list %}{% endfor %}
+<circle cx="120" cy="120" r="27.5" fill="none" stroke="rgba(143,220,255,.18)"/><circle cx="120" cy="120" r="55" fill="none" stroke="rgba(143,220,255,.18)"/><circle cx="120" cy="120" r="82.5" fill="none" stroke="rgba(143,220,255,.18)"/><circle cx="120" cy="120" r="110" fill="none" stroke="rgba(143,220,255,.28)"/>
+<path d="M120 10V230M10 120H230M42 42L198 198M198 42L42 198" stroke="rgba(143,220,255,.1)"/><text x="116" y="8">0°</text><text x="232" y="123">90°E</text><text x="112" y="238">180°</text><text x="-1" y="123">90°W</text>
+{% for s in stations %}<circle class="ring" cx="{{ s.px }}" cy="{{ s.py }}" r="4"/><circle class="pin {{ s.status }}" cx="{{ s.px }}" cy="{{ s.py }}" r="3.2"/><text x="{{ s.px }}" y="{{ s.py }}" dx="6" dy="-5" style="fill:#eef7ff;font-size:8px">{{ s.name }}</text>{% endfor %}</svg></div></div>
+{% endblock %}{% block scripts %}<script src="{% static 'js/live.js' %}"></script><script>startLive()</script>{% endblock %}

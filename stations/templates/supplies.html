@@ -1,0 +1,3 @@
+{% extends 'base.html' %}{% block title %}Supplies{% endblock %}{% block content %}
+<div class="head reveal"><div><h1>Supplies across the stations</h1><p>Items at or below their minimum stay highlighted so resupply flights can be planned early.</p></div></div>
+<div class="grid">{% for s in stations %}<div class="card reveal"><h3>{{ s.name }}</h3>{% for x in s.supplies.all %}<div class="row"><div style="flex:1"><b>{{ x.item }}</b>{% if x.low %} <span class="badge limited"><i></i>Low</span>{% endif %}<div class="bar {% if x.low %}warn{% endif %}"><div style="--w:{{ x.pct }}%"></div></div></div><span class="muted">{{ x.quantity }} {{ x.unit }}</span></div>{% endfor %}</div>{% endfor %}</div>{% endblock %}

@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% block title %}Personnel{% endblock %}{% block content %}
+<div class="head reveal"><div><h1>Personnel</h1><p>Winter-over team members at each active station.</p></div><input class="search" id="q" placeholder="Search name or role…"></div>
+<div class="chips reveal" style="margin-bottom:1rem"><span class="badge chip on" data-s="">All</span>{% for s in stations %}<span class="badge chip" data-s="{{ s.name }}">{{ s.name }}</span>{% endfor %}</div>
+<div class="card reveal" id="list">{% for p in items %}<div class="row person" data-s="{{ p.station.name }}" data-t="{{ p.name|lower }} {{ p.role|lower }}"><div><b>{{ p.name }}</b><div class="muted">{{ p.role }}</div></div><div style="text-align:right"><div class="muted">{{ p.station.name }}</div><span class="badge {% if p.health != 'fit' %}limited{% else %}online{% endif %}"><i></i><em>{{ p.get_health_display }}</em></span></div></div>{% endfor %}</div>
+<script>let s='',q='';const rows=[...document.querySelectorAll('.person')];
+function f(){rows.forEach(r=>r.style.display=(!s||r.dataset.s===s)&&r.dataset.t.includes(q)?'':'none')}
+document.getElementById('q').oninput=e=>{q=e.target.value.toLowerCase();f()};
+document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');s=c.dataset.s;f()})</script>{% endblock %}
